@@ -1,0 +1,56 @@
+// ./src/main/scala/com/ajb0211/recommender/MovieLens/ratings.spark
+
+
+
+import scala.util.Random
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.ml.recommendation.{ALS, ALSModel}
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
+
+
+def readUsers(fileString: String): DataFrame = {
+    spark.sparkContext.textFile(fileString)
+      .map{ line =>
+        val Array(user,item,rating,timestamp) = line.split('\t')
+        (user.toInt,item.toInt,rating.toInt,timestamp.toInt)
+      }.toDF("userID","itemID","rating","unixTime")
+
+  }
+
+
+
+val userData = readUsers("./src/main/resources/ml-100k/u.data")
+
+
+
+
+val trainData = userData.select($"userID",$"itemID",$"rating")
+
+val model = new ALS().
+          setSeed(Random.nextLong()).
+          setImplicitPrefs(true).
+          setRank(20).
+          setUserCol("userID").
+          setItemCol("itemID").
+          setRatingCol("rating").
+          setPredictionCol("prediction").
+          fit(trainData)
+
+
+def makeRecommendation(model: ALSModel, userID: Int, nRecs: Int): DataFrame = {
+    val toRec = model.itemFactors.
+        select($"id".as("itemID")).
+        withColumn("userID", lit(userID))
+
+    model.transform(toRec).
+        select("item","prediction").
+        orderBy($"prediction".desc).
+        limit(nRecs)
+}
+
+
+// val recs = makeRecommendation(model,481,5)
+
+

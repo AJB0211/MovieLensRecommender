@@ -1,0 +1,13 @@
+----------------------------------------------------------------
+Thu Aug 29 11:22:00 EDT 2019:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.12.1.1 - (1704137): instance a816c00e-016c-ddf8-1c18-00000e132e18 
+on database directory /home/alex/IdeaProjects/MovieLensRecommender/metastore_db with class loader org.apache.spark.sql.hive.client.IsolatedClientLoader$$anon$1@2b7e44af 
+Loaded from file:/opt/spark/spark-2.4.3-bin-hadoop2.7/jars/derby-10.12.1.1.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.8.0_221-b11
+user.dir=/home/alex/IdeaProjects/MovieLensRecommender
+os.name=Linux
+os.arch=amd64
+os.version=4.15.0-58-generic
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

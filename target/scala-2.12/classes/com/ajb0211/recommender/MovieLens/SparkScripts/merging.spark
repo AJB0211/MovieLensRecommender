@@ -1,0 +1,62 @@
+import scala.util.Random
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.ml.recommendation.{ALS, ALSModel}
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
+
+// ./src/main/scala/com/ajb0211/recommender/MovieLens/items.spark
+
+
+val itemSchema = StructType(
+    StructField("itemID", IntegerType, false) ::
+    StructField("title", StringType, false) ::
+    StructField("releaseDate",StringType,false) ::
+    StructField("videoReleaseDate",StringType,true) ::
+    StructField("imdb",StringType,true) ::
+    StructField("action",IntegerType,true) ::
+    StructField("adventure",IntegerType,true) ::
+    StructField("animation",IntegerType,true) ::
+    StructField("children",IntegerType,true) ::
+    StructField("comedy",IntegerType,true) ::
+    StructField("crime",IntegerType,true) ::
+    StructField("documentary",IntegerType,true) ::
+    StructField("drama",IntegerType,true) ::
+    StructField("fantasy",IntegerType,true) ::
+    StructField("noir",IntegerType,true) ::
+    StructField("horror",IntegerType,true) ::
+    StructField("musical",IntegerType,true) ::
+    StructField("mystery",IntegerType,true) ::
+    StructField("romance",IntegerType,true) ::
+    StructField("scifi",IntegerType,true) ::
+    StructField("thriller",IntegerType,true) ::
+    StructField("war",IntegerType,true) ::
+    StructField("western",IntegerType,true) :: Nil
+    )
+
+
+def readUsers(fileString: String): DataFrame = {
+    spark.sparkContext.textFile(fileString)
+      .map{ line =>
+        val Array(user,item,rating,timestamp) = line.split('\t')
+        (user.toInt,item.toInt,rating.toInt,timestamp.toInt)
+      }.toDF("userID","itemID","rating","unixTime")
+
+  }
+
+
+val userData = readUsers("./src/main/resources/ml-100k/u.data")
+
+
+val trainData = userData.select($"userID",$"itemID",$"rating")
+
+
+val items = spark.read.
+                option("delimiter","|").
+                schema(itemSchema).
+                csv("./src/main/resources/ml-100k/u.item")
+
+val merged = trainData.join(items, Seq("itemID"), "left").
+        select("userID","itemID","title","rating")
+
+merged.show

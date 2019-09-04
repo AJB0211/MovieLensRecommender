@@ -1,0 +1,24 @@
+import scala.util.Random
+import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.ml.recommendation.{ALS, ALSModel}
+import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
+
+// ./src/main/scala/com/ajb0211/recommender/MovieLens/users.spark
+
+
+
+
+def readUsers(fileString: String): DataFrame = {
+    spark.sparkContext.textFile(fileString).
+        map{ line =>
+        val Array(user,age,gender,occupation,zipcode) = line.split('|')
+        (user.toInt,age.toInt,gender,occupation,zipcode)
+        }.toDF("userID","age","sex","occupation","zipcode")
+}
+
+
+
+
+val userDF = readUsers("./src/main/resources/ml-100k/u.user")
