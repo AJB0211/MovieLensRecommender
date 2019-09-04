@@ -4,7 +4,6 @@ import java.io.{BufferedWriter, File, FileWriter}
 
 import com.ajb0211.recommender.metrics.areaUnderCurve
 
-import scala.util.Random
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.recommendation.{ALS, ALSModel}
 import org.apache.spark.sql.{DataFrame, Dataset, SparkSession}
@@ -61,8 +60,10 @@ class ALSTrainer(
   var alphaRange: Iterable[Double] = List(0.1),
   var maxIterRange: Iterable[Int] = List(20),
   var trainFraction: Double = 0.85,
+  var trainFile: Option[String] = None,
   var verbose: Boolean = false,
-) extends MovieLens(spark,ratingFile,itemFile,userFile) {
+  partitions: Int = 4
+) extends MovieLens(spark,ratingFile,itemFile,userFile,partitions) {
 
   // would rather access spark object but throwing error, not understood at this time
   import itemData.sparkSession.implicits._
@@ -81,30 +82,22 @@ class ALSTrainer(
   def setMaxIterRange(mir: Iterable[Int]): ALSTrainer = {maxIterRange = mir; this}
   def setTrainFraction(tf: Double): ALSTrainer = {trainFraction = tf; this}
   def setVerbose(v: Boolean): ALSTrainer = {verbose = v; this}
+  def setTrainFile(tf: String): ALSTrainer = {trainFile = Some(tf); this}
 
-
-  def initializeModel(
-                       rank: Int,
-                       regParam: Double,
-                       alpha: Double,
-                       maxIter: Int
-                     ): ALS = new ALS().
-                          setSeed(Random.nextLong()).
-                          setImplicitPrefs(true).
-                          setRank(rank).
-                          setRegParam(regParam).
-                          setAlpha(alpha).
-                          setMaxIter(maxIter).
-                          setUserCol("userID").
-                          setItemCol("itemID").
-                          setRatingCol("rating").
-                          setPredictionCol("prediction")
 
 
   def validate(): Seq[ScoredParams] = {
     val Array(trainData, testData) = ratingData.randomSplit(Array(trainFraction,1.0-trainFraction))
 
-    for (
+    // Use map operations to conditionally print
+    val file = trainFile.map(new File(_))
+    val bufferedWriter = file.map{ f => new BufferedWriter(new FileWriter(f))}
+    bufferedWriter.map{ bw =>
+      bw.write("auc,rank,reg,alpha,maxIter\n")
+      None
+    }
+
+    val out = for (
       rank <- rankRange;
       reg <- regParamRange;
       alpha <- alphaRange;
@@ -121,8 +114,15 @@ class ALSTrainer(
       if (verbose){
         println((auc, (rank,reg,alpha,maxIter)))
       }
+
+      // Return None for type-check
+      bufferedWriter.map{f => f.write(s"$auc,$rank,$reg,$alpha,$maxIter\n");None}
       (auc, (rank,reg,alpha,maxIter))
     }
+
+    bufferedWriter.map{bw => bw.close();None}
+
+    out
   }.toSeq
 
   // evaluate when needed

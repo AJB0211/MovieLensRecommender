@@ -1,8 +1,10 @@
 name := "MovieLensRecommender"
 
-version := "0.1"
+version := "1.0"
 
 scalaVersion := "2.12.8"
+
+organization := "com.ajb0211"
 
 
 

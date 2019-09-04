@@ -34,7 +34,8 @@ class MovieLens(
          val spark: SparkSession,
          val ratingFile: String,
          val itemFile: String,
-         val userFile: String
+         val userFile: String,
+         val partitions: Int = 4
                              ) {
   /*
     Base class that standardizes usage of MovieLens data and files
@@ -117,6 +118,23 @@ class MovieLens(
         (user.toInt,age.toInt,gender,occupation,zipcode)
       }.toDF("userID","age","sex","occupation","zipcode")
   }
+
+  def initializeModel(
+                       rank: Int,
+                       regParam: Double,
+                       alpha: Double,
+                       maxIter: Int
+                     ): ALS = new ALS().
+    setSeed(Random.nextLong()).
+    setImplicitPrefs(true).
+    setRank(rank).
+    setRegParam(regParam).
+    setAlpha(alpha).
+    setMaxIter(maxIter).
+    setUserCol("userID").
+    setItemCol("itemID").
+    setRatingCol("rating").
+    setPredictionCol("prediction")
 
 
 }
